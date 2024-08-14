@@ -154,6 +154,9 @@ fn main() {
             render3d(&mut framebuffer, &player, &texture, texture_width, texture_height); // Renderizado 3D
         }
 
+        framebuffer.draw_fps(750, 10); // Ubicación aproximada en la parte superior derecha
+
+
         window
             .update_with_buffer(&framebuffer.buffer, framebuffer_width, framebuffer_height)
             .unwrap();
