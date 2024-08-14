@@ -32,7 +32,15 @@ fn load_texture(path: &str) -> (Vec<u32>, usize, usize) {
 }
 
 // Función para renderizar en modo 2D con texturas
-fn render_2d(framebuffer: &mut Framebuffer, player: &Player, maze: &Vec<Vec<char>>, block_size: usize, texture: &Vec<u32>, texture_width: usize, texture_height: usize) {
+fn render_2d(
+    framebuffer: &mut Framebuffer,
+    player: &Player,
+    maze: &Vec<Vec<char>>,
+    block_size: usize,
+    texture: &Vec<u32>,
+    texture_width: usize,
+    texture_height: usize
+) {
     for (row_index, row) in maze.iter().enumerate() {
         for (col_index, &cell) in row.iter().enumerate() {
             if cell != ' ' {
@@ -49,10 +57,11 @@ fn render_2d(framebuffer: &mut Framebuffer, player: &Player, maze: &Vec<Vec<char
         }
     }
 
-    // Dibuja al jugador (sin cambios)
+    // Dibuja al jugador usando su posición en píxeles
     framebuffer.set_current_color(0xFFDDD);
     framebuffer.point(player.pos.x as usize, player.pos.y as usize);
 }
+
 
 // Función para renderizar en modo 3D con texturas
 fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, texture_width: usize, texture_height: usize) {
@@ -124,7 +133,7 @@ fn main() {
     ).unwrap();
 
     let maze = load_maze("./maze.txt");
-    let block_size = 60;
+    let block_size = 50;
 
     framebuffer.set_background_color(0x333355);
 

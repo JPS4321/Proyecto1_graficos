@@ -22,9 +22,11 @@ pub fn cast_ray(
         let cos = d * a.cos();
         let sin = d * a.sin();
 
+        // Convertimos la posición del jugador en términos de píxeles
         let x = (player.pos.x + cos) as usize;
         let y = (player.pos.y + sin) as usize;
 
+        // Calculamos la posición dentro del laberinto utilizando block_size
         let i = x / block_size;
         let j = y / block_size;
 
@@ -39,6 +41,6 @@ pub fn cast_ray(
             framebuffer.point(x, y);
         }
 
-        d += 10.0;
+        d += 1.0;
     }
 }
