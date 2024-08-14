@@ -155,7 +155,7 @@ fn main() {
             mode = if mode == "2D" { "3D" } else { "2D" };
         }
 
-        process_events(&window, &mut player); // Procesar eventos de teclado
+        process_events(&window, &mut player, &maze, block_size);
 
         if mode == "2D" {
             render_2d(&mut framebuffer, &player, &maze, block_size, &texture, texture_width, texture_height); // Renderizado 2D
