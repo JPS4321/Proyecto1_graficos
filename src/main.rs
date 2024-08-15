@@ -19,6 +19,7 @@ use crate::player::Player;
 use crate::caster::cast_ray;
 use crate::player_controller::process_events;
 
+// Función para cargar una textura desde un archivo PNG
 fn load_texture(path: &str) -> (Vec<u32>, usize, usize) {
     let img = image::open(path).expect("Failed to load texture");
     let (width, height) = img.dimensions();
@@ -33,6 +34,7 @@ fn load_texture(path: &str) -> (Vec<u32>, usize, usize) {
     (texture, width as usize, height as usize)
 }
 
+// Renderizado 2D
 fn render_2d(
     framebuffer: &mut Framebuffer,
     player: &Player,
@@ -71,7 +73,17 @@ fn render_2d(
     }
 }
 
-fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, texture_width: usize, texture_height: usize) {
+// Renderizado 3D
+fn render3d(
+    framebuffer: &mut Framebuffer,
+    player: &Player,
+    wall_texture: &Vec<u32>,
+    wall_texture_width: usize,
+    wall_texture_height: usize,
+    floor_texture: &Vec<u32>,
+    floor_texture_width: usize,
+    floor_texture_height: usize
+) {
     let maze = load_maze("./maze.txt");
     let block_size = 55;
     let num_rays = framebuffer.width;
@@ -79,6 +91,7 @@ fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, 
     let hw = framebuffer.width as f32 / 2.0;
     let hh = framebuffer.height as f32 / 2.0;
 
+    // Renderizar el techo
     framebuffer.set_current_color(0x3f3d4d);
     for y in 0..hh as usize {
         for x in 0..framebuffer.width {
@@ -86,13 +99,19 @@ fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, 
         }
     }
 
-    framebuffer.set_current_color(0x333355);
+    // Renderizar el suelo con la textura
     for y in hh as usize..framebuffer.height {
         for x in 0..framebuffer.width {
+            // Mapear las coordenadas de la pantalla a la textura del suelo
+            let texture_x = (x * floor_texture_width) / framebuffer.width;
+            let texture_y = ((y - hh as usize) * floor_texture_height) / (framebuffer.height - hh as usize);
+            let color = floor_texture[texture_y * floor_texture_width + texture_x];
+            framebuffer.set_current_color(color);
             framebuffer.point(x, y);
         }
     }
 
+    // Renderizar las paredes en 3D usando raycasting
     for i in 0..num_rays {
         let current_ray = i as f32 / num_rays as f32;
         let a = player.a - (player.fov / 2.0) + (player.fov * current_ray);
@@ -111,11 +130,11 @@ fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, 
             intersect.impact_pos.0 % block_size as f32
         };
 
-        let texture_x = ((wall_x / block_size as f32) * texture_width as f32).clamp(0.0, (texture_width - 1) as f32) as usize;
+        let texture_x = ((wall_x / block_size as f32) * wall_texture_width as f32).clamp(0.0, (wall_texture_width - 1) as f32) as usize;
     
         for y in y0 as usize..y1 as usize {
-            let texture_y = (((y - y0 as usize) * texture_height) / wall_height as usize).clamp(0, texture_height - 1);
-            let color = texture[texture_y * texture_width + texture_x];
+            let texture_y = (((y - y0 as usize) * wall_texture_height) / wall_height as usize).clamp(0, wall_texture_height - 1);
+            let color = wall_texture[texture_y * wall_texture_width + texture_x];
             framebuffer.set_current_color(color);
             framebuffer.point(i, y);
         }
@@ -134,13 +153,13 @@ fn main() {
     
     // Crear los archivos de audio y sus respectivos sinks (controladores de audio)
     let file1 = BufReader::new(File::open("./Assets/maintheme.wav").unwrap());
-    let source1 = Decoder::new(file1).unwrap().amplify(0.1); // Reducir volumen al 50%
+    let source1 = Decoder::new(file1).unwrap().amplify(0.1); // Reducir volumen al 10%
     let sink1 = Sink::try_new(&stream_handle).unwrap();
     sink1.append(source1);
     sink1.pause(); // Pausamos para controlar cuándo iniciar
 
     let file2 = BufReader::new(File::open("./Assets/taylor.wav").unwrap());
-    let source2 = Decoder::new(file2).unwrap().amplify(0.1); // Reducir volumen al 50%
+    let source2 = Decoder::new(file2).unwrap().amplify(0.1); // Reducir volumen al 10%
     let sink2 = Sink::try_new(&stream_handle).unwrap();
     sink2.append(source2);
     sink2.pause(); // También pausamos el segundo audio
@@ -178,7 +197,10 @@ fn main() {
     let mut mode = "2D"; 
     let mut playing_first = true; // Bandera para controlar cuál archivo está sonando
 
-    let (texture, texture_width, texture_height) = load_texture("./Assets/prueba2.jpg");
+    let (wall_texture, wall_texture_width, wall_texture_height) = load_texture("./Assets/prueba2.jpg");
+
+    // Cargar la textura del suelo
+    let (floor_texture, floor_texture_width, floor_texture_height) = load_texture("./Assets/grass.jpg");
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         framebuffer.clear();
@@ -204,9 +226,9 @@ fn main() {
         process_events(&mut window, &mut player, &maze, block_size, &walking_sound_sink);
 
         if mode == "2D" {
-            render_2d(&mut framebuffer, &player, &maze, block_size, &texture, texture_width, texture_height); 
+            render_2d(&mut framebuffer, &player, &maze, block_size, &wall_texture, wall_texture_width, wall_texture_height); 
         } else {
-            render3d(&mut framebuffer, &player, &texture, texture_width, texture_height); 
+            render3d(&mut framebuffer, &player, &wall_texture, wall_texture_width, wall_texture_height, &floor_texture, floor_texture_width, floor_texture_height); 
         }
 
         framebuffer.draw_fps(750, 10); 
