@@ -22,11 +22,12 @@ fn load_texture(path: &str) -> (Vec<u32>, usize, usize) {
     let (width, height) = img.dimensions();
     let data = img.to_rgba8().into_raw();
     let texture: Vec<u32> = data.chunks(4).map(|p| {
+        // Asumiendo que el orden original es RGBA y queremos convertirlo a ARGB
         let r = p[0] as u32;
         let g = p[1] as u32;
         let b = p[2] as u32;
         let a = p[3] as u32;
-        (r << 24) | (g << 16) | (b << 8) | a
+        (a << 24) | (r << 16) | (g << 8) | b  // Cambiando el orden a ARGB si es necesario
     }).collect();
     (texture, width as usize, height as usize)
 }
@@ -138,14 +139,14 @@ fn main() {
     framebuffer.set_background_color(0x333355);
 
     let mut player = Player {
-        pos: Vec2::new(150.0, 150.0),
+        pos: Vec2::new(145.0, 150.0),
         a: PI / 3.0,
         fov: PI / 3.0
     };
 
-    let mut mode = "2D"; // Modo inicial
+    let mut mode = "2D"; 
 
-    // Cargar la textura
+    
     let (texture, texture_width, texture_height) = load_texture("./bricks.png");
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
@@ -158,12 +159,12 @@ fn main() {
         process_events(&window, &mut player, &maze, block_size);
 
         if mode == "2D" {
-            render_2d(&mut framebuffer, &player, &maze, block_size, &texture, texture_width, texture_height); // Renderizado 2D
+            render_2d(&mut framebuffer, &player, &maze, block_size, &texture, texture_width, texture_height); 
         } else {
-            render3d(&mut framebuffer, &player, &texture, texture_width, texture_height); // Renderizado 3D
+            render3d(&mut framebuffer, &player, &texture, texture_width, texture_height); 
         }
 
-        framebuffer.draw_fps(750, 10); // Ubicación aproximada en la parte superior derecha
+        framebuffer.draw_fps(750, 10); 
 
 
         window

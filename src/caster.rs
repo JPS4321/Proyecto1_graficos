@@ -4,6 +4,7 @@ use crate::player::Player;
 pub struct Intersect {
     pub distance: f32,
     pub impact: char,
+    
 }
 
 pub fn cast_ray(
