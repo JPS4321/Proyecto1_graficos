@@ -3,10 +3,9 @@ use minifb::{Window, WindowOptions, Key};
 use nalgebra_glm::Vec2;
 use std::f32::consts::PI;
 use std::time::Duration;
-use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink, Source};
+use rodio::{Decoder, OutputStream, Sink, Source};
 use std::fs::File;
 use std::io::BufReader;
-use std::sync::{Arc, Mutex};
 
 mod framebuffer;
 mod maze;
@@ -20,7 +19,6 @@ use crate::player::Player;
 use crate::caster::cast_ray;
 use crate::player_controller::process_events;
 
-// Función para cargar una textura desde un archivo PNG
 fn load_texture(path: &str) -> (Vec<u32>, usize, usize) {
     let img = image::open(path).expect("Failed to load texture");
     let (width, height) = img.dimensions();
@@ -61,12 +59,21 @@ fn render_2d(
     }
 
     framebuffer.set_current_color(0xFFDDD);
-    framebuffer.point(player.pos.x as usize, player.pos.y as usize);
+
+    // Tamaño del "punto" que representa al jugador
+    let player_size = 5;
+
+    // Dibujar un cuadrado en torno a la posición del jugador
+    for y in (player.pos.y as usize).saturating_sub(player_size)..=(player.pos.y as usize + player_size) {
+        for x in (player.pos.x as usize).saturating_sub(player_size)..=(player.pos.x as usize + player_size) {
+            framebuffer.point(x, y);
+        }
+    }
 }
 
 fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, texture_width: usize, texture_height: usize) {
     let maze = load_maze("./maze.txt");
-    let block_size = 50;
+    let block_size = 55;
     let num_rays = framebuffer.width;
 
     let hw = framebuffer.width as f32 / 2.0;
@@ -127,16 +134,23 @@ fn main() {
     
     // Crear los archivos de audio y sus respectivos sinks (controladores de audio)
     let file1 = BufReader::new(File::open("./Assets/maintheme.wav").unwrap());
-    let source1 = Decoder::new(file1).unwrap().amplify(0.5); // Reducir volumen al 50%
+    let source1 = Decoder::new(file1).unwrap().amplify(0.1); // Reducir volumen al 50%
     let sink1 = Sink::try_new(&stream_handle).unwrap();
     sink1.append(source1);
     sink1.pause(); // Pausamos para controlar cuándo iniciar
 
     let file2 = BufReader::new(File::open("./Assets/taylor.wav").unwrap());
-    let source2 = Decoder::new(file2).unwrap().amplify(0.5); // Reducir volumen al 50%
+    let source2 = Decoder::new(file2).unwrap().amplify(0.1); // Reducir volumen al 50%
     let sink2 = Sink::try_new(&stream_handle).unwrap();
     sink2.append(source2);
     sink2.pause(); // También pausamos el segundo audio
+
+    // Cargar el efecto de sonido de caminar
+    let walking_sound_file = BufReader::new(File::open("./Assets/walking.wav").unwrap());
+    let walking_sound_source = Decoder::new(walking_sound_file).unwrap().amplify(0.4).repeat_infinite();
+    let walking_sound_sink = Sink::try_new(&stream_handle).unwrap();
+    walking_sound_sink.append(walking_sound_source);
+    walking_sound_sink.pause(); // Inicialmente, pausa el sonido
 
     // Por defecto, comenzamos con el primer archivo
     sink1.play();
@@ -151,7 +165,7 @@ fn main() {
     ).unwrap();
 
     let maze = load_maze("./maze.txt");
-    let block_size = 50;
+    let block_size = 55;
 
     framebuffer.set_background_color(0x333355);
 
@@ -186,7 +200,8 @@ fn main() {
             playing_first = !playing_first;
         }
 
-        process_events(&mut window, &mut player, &maze, block_size);
+        // Pass the walking sound sink to the process_events function
+        process_events(&mut window, &mut player, &maze, block_size, &walking_sound_sink);
 
         if mode == "2D" {
             render_2d(&mut framebuffer, &player, &maze, block_size, &texture, texture_width, texture_height); 
