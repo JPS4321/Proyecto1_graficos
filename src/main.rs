@@ -74,7 +74,7 @@ fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, 
     let hh = framebuffer.height as f32 / 2.0;
 
     // Renderizar el techo
-    framebuffer.set_current_color(0x87CEEB); // Color del techo
+    framebuffer.set_current_color(0x3f3d4d); // Color del techo
     for y in 0..hh as usize {
         for x in 0..framebuffer.width {
             framebuffer.point(x, y);
@@ -103,8 +103,15 @@ fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, 
         let y0 = hh - (wall_height / 2.0);
         let y1 = hh + (wall_height / 2.0);
     
-        // Asegurarse de que texture_x esté dentro de los límites
-        let texture_x = ((intersect.impact as u8 as f32 / block_size as f32) * texture_width as f32).clamp(0.0, (texture_width - 1) as f32) as usize;
+        // Diferenciar entre paredes verticales y horizontales
+        let wall_x = if intersect.impact == '|' {
+            intersect.impact_pos.1 % block_size as f32  // Pared vertical
+        } else {
+            intersect.impact_pos.0 % block_size as f32  // Pared horizontal
+        };
+
+        // Ajustar `texture_x` para asegurar que la textura se proyecte correctamente
+        let texture_x = ((wall_x / block_size as f32) * texture_width as f32).clamp(0.0, (texture_width - 1) as f32) as usize;
     
         for y in y0 as usize..y1 as usize {
             // Asegurarse de que texture_y esté dentro de los límites
@@ -114,8 +121,8 @@ fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, 
             framebuffer.point(i, y);
         }
     }
-    
 }
+
 
 fn main() {
     let window_width = 900;
@@ -139,7 +146,7 @@ fn main() {
     framebuffer.set_background_color(0x333355);
 
     let mut player = Player {
-        pos: Vec2::new(145.0, 150.0),
+        pos: Vec2::new(135.0, 150.0),
         a: PI / 3.0,
         fov: PI / 3.0
     };
@@ -147,7 +154,7 @@ fn main() {
     let mut mode = "2D"; 
 
     
-    let (texture, texture_width, texture_height) = load_texture("./bricks.png");
+    let (texture, texture_width, texture_height) = load_texture("./Assets/prueba2.jpg");
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         framebuffer.clear();
@@ -156,7 +163,7 @@ fn main() {
             mode = if mode == "2D" { "3D" } else { "2D" };
         }
 
-        process_events(&window, &mut player, &maze, block_size);
+        process_events(&mut window, &mut player, &maze, block_size);
 
         if mode == "2D" {
             render_2d(&mut framebuffer, &player, &maze, block_size, &texture, texture_width, texture_height); 

@@ -4,7 +4,7 @@ use crate::player::Player;
 pub struct Intersect {
     pub distance: f32,
     pub impact: char,
-    
+    pub impact_pos: (f32, f32), // Nueva adición: posición del impacto
 }
 
 pub fn cast_ray(
@@ -32,9 +32,11 @@ pub fn cast_ray(
         let j = y / block_size;
 
         if maze[j][i] != ' ' {
+            // Retornamos la distancia, el tipo de impacto y la posición exacta del impacto
             return Intersect {
                 distance: d,
                 impact: maze[j][i],
+                impact_pos: (player.pos.x + cos, player.pos.y + sin),
             };
         }
 
