@@ -3,6 +3,10 @@ use minifb::{Window, WindowOptions, Key};
 use nalgebra_glm::Vec2;
 use std::f32::consts::PI;
 use std::time::Duration;
+use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink, Source};
+use std::fs::File;
+use std::io::BufReader;
+use std::sync::{Arc, Mutex};
 
 mod framebuffer;
 mod maze;
@@ -22,17 +26,15 @@ fn load_texture(path: &str) -> (Vec<u32>, usize, usize) {
     let (width, height) = img.dimensions();
     let data = img.to_rgba8().into_raw();
     let texture: Vec<u32> = data.chunks(4).map(|p| {
-        // Asumiendo que el orden original es RGBA y queremos convertirlo a ARGB
         let r = p[0] as u32;
         let g = p[1] as u32;
         let b = p[2] as u32;
         let a = p[3] as u32;
-        (a << 24) | (r << 16) | (g << 8) | b  // Cambiando el orden a ARGB si es necesario
+        (a << 24) | (r << 16) | (g << 8) | b
     }).collect();
     (texture, width as usize, height as usize)
 }
 
-// Función para renderizar en modo 2D con texturas
 fn render_2d(
     framebuffer: &mut Framebuffer,
     player: &Player,
@@ -58,13 +60,10 @@ fn render_2d(
         }
     }
 
-    // Dibuja al jugador usando su posición en píxeles
     framebuffer.set_current_color(0xFFDDD);
     framebuffer.point(player.pos.x as usize, player.pos.y as usize);
 }
 
-
-// Función para renderizar en modo 3D con texturas
 fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, texture_width: usize, texture_height: usize) {
     let maze = load_maze("./maze.txt");
     let block_size = 50;
@@ -73,23 +72,20 @@ fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, 
     let hw = framebuffer.width as f32 / 2.0;
     let hh = framebuffer.height as f32 / 2.0;
 
-    // Renderizar el techo
-    framebuffer.set_current_color(0x3f3d4d); // Color del techo
+    framebuffer.set_current_color(0x3f3d4d);
     for y in 0..hh as usize {
         for x in 0..framebuffer.width {
             framebuffer.point(x, y);
         }
     }
 
-    // Renderizar el suelo
-    framebuffer.set_current_color(0x333355); // Color del suelo
+    framebuffer.set_current_color(0x333355);
     for y in hh as usize..framebuffer.height {
         for x in 0..framebuffer.width {
             framebuffer.point(x, y);
         }
     }
 
-    // Renderizar las paredes en 3D usando raycasting
     for i in 0..num_rays {
         let current_ray = i as f32 / num_rays as f32;
         let a = player.a - (player.fov / 2.0) + (player.fov * current_ray);
@@ -97,24 +93,20 @@ fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, 
         let intersect = cast_ray(framebuffer, &maze, player, a, block_size, false);
         let distance = intersect.distance;
     
-        // Proyección de la pared en 3D
         let wall_height = (block_size as f32 / distance) * 200.0;
     
         let y0 = hh - (wall_height / 2.0);
         let y1 = hh + (wall_height / 2.0);
     
-        // Diferenciar entre paredes verticales y horizontales
         let wall_x = if intersect.impact == '|' {
-            intersect.impact_pos.1 % block_size as f32  // Pared vertical
+            intersect.impact_pos.1 % block_size as f32
         } else {
-            intersect.impact_pos.0 % block_size as f32  // Pared horizontal
+            intersect.impact_pos.0 % block_size as f32
         };
 
-        // Ajustar `texture_x` para asegurar que la textura se proyecte correctamente
         let texture_x = ((wall_x / block_size as f32) * texture_width as f32).clamp(0.0, (texture_width - 1) as f32) as usize;
     
         for y in y0 as usize..y1 as usize {
-            // Asegurarse de que texture_y esté dentro de los límites
             let texture_y = (((y - y0 as usize) * texture_height) / wall_height as usize).clamp(0, texture_height - 1);
             let color = texture[texture_y * texture_width + texture_x];
             framebuffer.set_current_color(color);
@@ -123,13 +115,31 @@ fn render3d(framebuffer: &mut Framebuffer, player: &Player, texture: &Vec<u32>, 
     }
 }
 
-
 fn main() {
     let window_width = 900;
     let window_height = 600;
     let framebuffer_width = 900;
     let framebuffer_height = 600;
     let frame_delay = Duration::from_millis(16);
+
+    // Configuración de la reproducción de audio WAV
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    
+    // Crear los archivos de audio y sus respectivos sinks (controladores de audio)
+    let file1 = BufReader::new(File::open("./Assets/maintheme.wav").unwrap());
+    let source1 = Decoder::new(file1).unwrap().amplify(0.5); // Reducir volumen al 50%
+    let sink1 = Sink::try_new(&stream_handle).unwrap();
+    sink1.append(source1);
+    sink1.pause(); // Pausamos para controlar cuándo iniciar
+
+    let file2 = BufReader::new(File::open("./Assets/taylor.wav").unwrap());
+    let source2 = Decoder::new(file2).unwrap().amplify(0.5); // Reducir volumen al 50%
+    let sink2 = Sink::try_new(&stream_handle).unwrap();
+    sink2.append(source2);
+    sink2.pause(); // También pausamos el segundo audio
+
+    // Por defecto, comenzamos con el primer archivo
+    sink1.play();
 
     let mut framebuffer = Framebuffer::new(framebuffer_width, framebuffer_height);
 
@@ -152,8 +162,8 @@ fn main() {
     };
 
     let mut mode = "2D"; 
+    let mut playing_first = true; // Bandera para controlar cuál archivo está sonando
 
-    
     let (texture, texture_width, texture_height) = load_texture("./Assets/prueba2.jpg");
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
@@ -161,6 +171,19 @@ fn main() {
 
         if window.is_key_down(Key::M) {
             mode = if mode == "2D" { "3D" } else { "2D" };
+        }
+
+        if window.is_key_pressed(Key::T, minifb::KeyRepeat::No) {
+            if playing_first {
+                // Pausar el primer archivo y reproducir el segundo
+                sink1.pause();
+                sink2.play();
+            } else {
+                // Pausar el segundo archivo y reproducir el primero
+                sink2.pause();
+                sink1.play();
+            }
+            playing_first = !playing_first;
         }
 
         process_events(&mut window, &mut player, &maze, block_size);
@@ -172,7 +195,6 @@ fn main() {
         }
 
         framebuffer.draw_fps(750, 10); 
-
 
         window
             .update_with_buffer(&framebuffer.buffer, framebuffer_width, framebuffer_height)

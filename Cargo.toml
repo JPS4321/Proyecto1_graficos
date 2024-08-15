@@ -9,5 +9,6 @@ edition = "2021"
 nalgebra-glm = "0.18.0"
 minifb = "0.26.0"
 image = "0.23.14"
-rodio = "0.14"
+rodio = "0.15.0"
+
 

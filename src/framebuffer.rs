@@ -46,6 +46,7 @@ impl Framebuffer {
             self.buffer[y * self.width + x] = self.current_color;
         }
     }
+    
 
     pub fn set_background_color(&mut self, color: u32) {
         self.background_color = color;
