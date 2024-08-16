@@ -141,6 +141,56 @@ fn render3d(
     }
 }
 
+
+fn render_minimap(
+    framebuffer: &mut Framebuffer,
+    player: &Player,
+    maze: &Vec<Vec<char>>,
+    block_size: usize,
+    texture: &Vec<u32>,
+    texture_width: usize,
+    texture_height: usize,
+    minimap_scale: usize // Escala para reducir el tamaño del minimapa
+) {
+    let scaled_block_size = block_size / minimap_scale;
+
+    for (row_index, row) in maze.iter().enumerate() {
+        for (col_index, &cell) in row.iter().enumerate() {
+            if cell != ' ' {
+                for y in 0..scaled_block_size {
+                    for x in 0..scaled_block_size {
+                        let tx = (x * texture_width) / block_size;
+                        let ty = (y * texture_height) / block_size;
+                        let color = texture[ty * texture_width + tx];
+                        framebuffer.set_current_color(color);
+                        framebuffer.point(col_index * scaled_block_size + x, row_index * scaled_block_size + y);
+                    }
+                }
+            }
+        }
+    }
+
+    framebuffer.set_current_color(0xFFDDD);
+
+    // Tamaño del "punto" que representa al jugador en el minimapa
+    let minimap_player_size = 2;
+
+    // Dibujar un pequeño cuadrado en torno a la posición del jugador en el minimapa
+    let minimap_player_x = (player.pos.x as usize) / minimap_scale;
+    let minimap_player_y = (player.pos.y as usize) / minimap_scale;
+
+    for y in minimap_player_y.saturating_sub(minimap_player_size)..=(minimap_player_y + minimap_player_size) {
+        for x in minimap_player_x.saturating_sub(minimap_player_size)..=(minimap_player_x + minimap_player_size) {
+            framebuffer.point(x, y);
+        }
+    }
+}
+
+
+
+
+
+
 fn main() {
     let window_width = 900;
     let window_height = 600;
@@ -166,7 +216,7 @@ fn main() {
 
     // Cargar el efecto de sonido de caminar
     let walking_sound_file = BufReader::new(File::open("./Assets/walking.wav").unwrap());
-    let walking_sound_source = Decoder::new(walking_sound_file).unwrap().amplify(0.2).repeat_infinite();
+    let walking_sound_source = Decoder::new(walking_sound_file).unwrap().amplify(0.4).repeat_infinite();
     let walking_sound_sink = Sink::try_new(&stream_handle).unwrap();
     walking_sound_sink.append(walking_sound_source);
     walking_sound_sink.pause(); // Inicialmente, pausa el sonido
@@ -229,6 +279,9 @@ fn main() {
             render_2d(&mut framebuffer, &player, &maze, block_size, &wall_texture, wall_texture_width, wall_texture_height); 
         } else {
             render3d(&mut framebuffer, &player, &wall_texture, wall_texture_width, wall_texture_height, &floor_texture, floor_texture_width, floor_texture_height); 
+            let minimap_scale = 5; // Cambia este valor para ajustar el tamaño del minimapa
+            render_minimap(&mut framebuffer, &player, &maze, block_size, &wall_texture, wall_texture_width, wall_texture_height, minimap_scale);
+   
         }
 
         framebuffer.draw_fps(750, 10); 

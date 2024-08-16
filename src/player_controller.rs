@@ -1,7 +1,6 @@
 use minifb::Window;
 use minifb::Key;
 use crate::player::Player;
-use std::f32::consts::PI;
 use rodio::Sink;
 
 pub fn process_events(
