@@ -92,7 +92,7 @@ fn render3d(
     let hh = framebuffer.height as f32 / 2.0;
 
     // Renderizar el techo
-    framebuffer.set_current_color(0x3f3d4d);
+    framebuffer.set_current_color(0x03a9f4);
     for y in 0..hh as usize {
         for x in 0..framebuffer.width {
             framebuffer.point(x, y);
@@ -166,7 +166,7 @@ fn main() {
 
     // Cargar el efecto de sonido de caminar
     let walking_sound_file = BufReader::new(File::open("./Assets/walking.wav").unwrap());
-    let walking_sound_source = Decoder::new(walking_sound_file).unwrap().amplify(0.4).repeat_infinite();
+    let walking_sound_source = Decoder::new(walking_sound_file).unwrap().amplify(0.2).repeat_infinite();
     let walking_sound_sink = Sink::try_new(&stream_handle).unwrap();
     walking_sound_sink.append(walking_sound_source);
     walking_sound_sink.pause(); // Inicialmente, pausa el sonido
