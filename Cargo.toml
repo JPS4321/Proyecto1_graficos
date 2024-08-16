@@ -10,5 +10,6 @@ nalgebra-glm = "0.18.0"
 minifb = "0.26.0"
 image = "0.23.14"
 rodio = "0.15.0"
+bmp = "0.5.0"
 
 

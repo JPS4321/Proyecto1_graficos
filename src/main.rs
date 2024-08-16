@@ -12,7 +12,9 @@ mod maze;
 mod player;
 mod caster;
 mod player_controller;
+mod menu;
 
+use menu::Menu;
 use crate::framebuffer::Framebuffer;
 use crate::maze::load_maze;
 use crate::player::Player;
@@ -194,6 +196,20 @@ fn render_minimap(
 fn main() {
     let window_width = 900;
     let window_height = 600;
+
+    let mut menu = Menu::new(window_width, window_height);
+    let selected_mode = menu.run();
+
+    let maze_file = match selected_mode {
+        Some("easy") => "./maze.txt",
+        Some("hard") => "./maze.txt",
+        _ => {
+            println!("No mode selected, exiting...");
+            return;
+        }
+    };
+
+    // Aquí sigue tu código original de configuración del juego
     let framebuffer_width = 900;
     let framebuffer_height = 600;
     let frame_delay = Duration::from_millis(16);
@@ -233,7 +249,7 @@ fn main() {
         WindowOptions::default(),
     ).unwrap();
 
-    let maze = load_maze("./maze.txt");
+    let maze = load_maze(maze_file);
     let block_size = 55;
 
     framebuffer.set_background_color(0x333355);
