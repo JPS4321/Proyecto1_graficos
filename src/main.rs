@@ -79,6 +79,8 @@ fn render_2d(
 fn render3d(
     framebuffer: &mut Framebuffer,
     player: &Player,
+    maze: &Vec<Vec<char>>, // Ahora el laberinto se pasa como argumento
+    block_size: usize,
     wall_texture: &Vec<u32>,
     wall_texture_width: usize,
     wall_texture_height: usize,
@@ -86,8 +88,6 @@ fn render3d(
     floor_texture_width: usize,
     floor_texture_height: usize
 ) {
-    let maze = load_maze("./maze.txt");
-    let block_size = 55;
     let num_rays = framebuffer.width;
 
     let hw = framebuffer.width as f32 / 2.0;
@@ -118,7 +118,7 @@ fn render3d(
         let current_ray = i as f32 / num_rays as f32;
         let a = player.a - (player.fov / 2.0) + (player.fov * current_ray);
     
-        let intersect = cast_ray(framebuffer, &maze, player, a, block_size, false);
+        let intersect = cast_ray(framebuffer, maze, player, a, block_size, false);
         let distance = intersect.distance;
     
         let wall_height = (block_size as f32 / distance) * 200.0;
@@ -201,8 +201,8 @@ fn main() {
     let selected_mode = menu.run();
 
     let maze_file = match selected_mode {
-        Some("easy") => "./maze.txt",
-        Some("hard") => "./maze.txt",
+        Some("easy") => "./maze_easy.txt",
+        Some("hard") => "./maze_hard.txt",
         _ => {
             println!("No mode selected, exiting...");
             return;
@@ -294,7 +294,7 @@ fn main() {
         if mode == "2D" {
             render_2d(&mut framebuffer, &player, &maze, block_size, &wall_texture, wall_texture_width, wall_texture_height); 
         } else {
-            render3d(&mut framebuffer, &player, &wall_texture, wall_texture_width, wall_texture_height, &floor_texture, floor_texture_width, floor_texture_height); 
+            render3d(&mut framebuffer, &player, &maze, block_size, &wall_texture, wall_texture_width, wall_texture_height, &floor_texture, floor_texture_width, floor_texture_height); 
             let minimap_scale = 5; // Cambia este valor para ajustar el tamaño del minimapa
             render_minimap(&mut framebuffer, &player, &maze, block_size, &wall_texture, wall_texture_width, wall_texture_height, minimap_scale);
    
