@@ -4,7 +4,7 @@ use crate::player::Player;
 pub struct Intersect {
     pub distance: f32,
     pub impact: char,
-    pub impact_pos: (f32, f32), // Nueva adición: posición del impacto
+    pub impact_pos: (f32, f32),
 }
 
 pub fn cast_ray(
@@ -23,17 +23,26 @@ pub fn cast_ray(
         let cos = d * a.cos();
         let sin = d * a.sin();
 
-        // Convertimos la posición del jugador en términos de píxeles
+        
         let x = (player.pos.x + cos) as usize;
         let y = (player.pos.y + sin) as usize;
 
-        // Calculamos la posición dentro del laberinto utilizando block_size
+        
         let i = x / block_size;
         let j = y / block_size;
 
-        // Verificamos que i y j estén dentro de los límites de la matriz maze
-        if j < maze.len() && i < maze[0].len() && maze[j][i] != ' ' {
-            // Retornamos la distancia, el tipo de impacto y la posición exacta del impacto
+        
+        if j >= maze.len() || i >= maze[j].len() {
+            
+            return Intersect {
+                distance: d,
+                impact: ' ', 
+                impact_pos: (player.pos.x + cos, player.pos.y + sin),
+            };
+        }
+
+        if maze[j][i] != ' ' && maze[j][i] != 'F' {
+            
             if d > 0.0 {
                 return Intersect {
                     distance: d,

@@ -8,13 +8,13 @@ pub fn process_events(
     player: &mut Player,
     maze: &Vec<Vec<char>>,
     block_size: usize,
-    walking_sound_sink: &Sink, // Add the Sink for the walking sound effect as a parameter
+    walking_sound_sink: &Sink, 
 ) {
     const MOVE_SPEED: f32 = 5.0;
     const ROTATION_SPEED: f32 = 0.3;
     const DEAD_ZONE: f32 = 250.0;
 
-    // Mouse movement for rotating the player
+    
     if let Some((mouse_x, _)) = window.get_mouse_pos(minifb::MouseMode::Discard) {
         let center_x = window.get_size().0 as f32 / 2.0;
         let left_dead_zone = center_x - DEAD_ZONE / 2.0;
@@ -27,7 +27,7 @@ pub fn process_events(
         }
     }
 
-    // Movement with arrow keys
+    
     let forward_x = player.a.cos() * MOVE_SPEED;
     let forward_y = player.a.sin() * MOVE_SPEED;
 
@@ -37,33 +37,36 @@ pub fn process_events(
     let mut is_moving = false;
 
     if window.is_key_down(Key::Up) {
-        new_x += forward_x; // Move forward in X
-        new_y += forward_y; // Move forward in Y
+        new_x += forward_x; 
+        new_y += forward_y; 
         is_moving = true;
     }
     if window.is_key_down(Key::Down) {
-        new_x -= forward_x; // Move backward in X
-        new_y -= forward_y; // Move backward in Y
+        new_x -= forward_x; 
+        new_y -= forward_y; 
         is_moving = true;
     }
 
     if window.is_key_down(Key::Left) {
-        player.a -= ROTATION_SPEED; // Rotate left
+        player.a -= ROTATION_SPEED; 
     }
     if window.is_key_down(Key::Right) {
-        player.a += ROTATION_SPEED; // Rotate right
+        player.a += ROTATION_SPEED; 
     }
 
-    // Check if the new position collides with a wall
-    let i = new_x as usize / block_size;
-    let j = new_y as usize / block_size;
+    
+    
+let i = new_x as usize / block_size;
+let j = new_y as usize / block_size;
 
-    if maze[j][i] == ' ' {
-        player.pos.x = new_x;
-        player.pos.y = new_y;
-    }
 
-    // Handle walking sound effect
+if maze[j][i] == ' ' || maze[j][i] == 'F' {
+    player.pos.x = new_x;
+    player.pos.y = new_y;
+}
+
+
+    
     if is_moving {
         if walking_sound_sink.is_paused() {
             walking_sound_sink.play();

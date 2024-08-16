@@ -21,13 +21,13 @@ fn write_bmp_header(file: &mut BufWriter<File>, width: usize, height: usize) -> 
     let file_size = (height * width * (BMP_BITS_PER_PIXEL / 8)) + BMP_HEADER_SIZE as usize;
     let pixel_size = file_size - BMP_HEADER_SIZE;
 
-    // file header
+    
     file.write_all(b"BM")?;
     file.write_all(&(file_size as u32).to_le_bytes())?;
     file.write_all(&0u32.to_le_bytes())?;
     file.write_all(&(BMP_PIXEL_OFFSET as u32).to_le_bytes())?;
 
-    // info header
+    
     file.write_all(&40u32.to_le_bytes())?;
     file.write_all(&(width as u32).to_le_bytes())?;
     file.write_all(&(height as u32).to_le_bytes())?;
